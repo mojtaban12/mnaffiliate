@@ -1,0 +1,14 @@
+# منع دسترسی مستقیم به فایل‌های حساس پنل
+
+# جلوگیری از دسترسی به پوشه config (کانفیگ، دیتابیس، مایگریشن)
+RedirectMatch 403 ^/mnaffiliate/config/.*$
+
+<IfModule mod_authz_core.c>
+    # فایل‌های کانفیگ در هر صورت هرگز سرو نمی‌شوند
+    <FilesMatch "\.(cfg|ini|log|sql|sh)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# جلوگیری از نمایش لیست فایل‌ها
+Options -Indexes
