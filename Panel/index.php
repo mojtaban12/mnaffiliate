@@ -50,6 +50,28 @@ switch ($request_uri) {
         require_once __DIR__ . '/templates/list_commissions.php';
         break;
 
+    case $base_path . '/payments':
+        check_auth(); // Protect this page
+        require_once __DIR__ . '/api/endpoints/payments.php';
+        $payments = listPayments($pdo);
+        $pay_message = '';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $pay_action = $_POST['pay_action'] ?? '';
+            if ($pay_action === 'approve') {
+                $result = approvePayment($pdo, $_POST, $_FILES);
+            } elseif ($pay_action === 'reject') {
+                $result = rejectPayment($pdo, $_POST);
+            } else {
+                $result = ['status' => 'error', 'message' => 'عملیات نامعتبر است.'];
+            }
+            $pay_message = $result['status'] === 'success'
+                ? '<div class="alert alert-success">موفقیت! ' . htmlspecialchars($result['message']) . '</div>'
+                : '<div class="alert alert-danger">خطا: ' . htmlspecialchars($result['message']) . '</div>';
+            $payments = listPayments($pdo); // بروزرسانی لیست پس از عملیات
+        }
+        require_once __DIR__ . '/templates/list_payments.php';
+        break;
+
     case $base_path . '/list':
         check_auth(); // Protect this page
         // Fetch affiliates list (previously in list.php)
@@ -66,11 +88,17 @@ switch ($request_uri) {
                     a.status,
                     a.total_earnings,
                     a.created_at,
-                    COUNT(r.id) AS referral_count
+                    COUNT(r.id) AS referral_count,
+                    COALESCE(c.available_balance, 0) AS available_balance
                 FROM
                     affiliates AS a
                 LEFT JOIN
                     referrals AS r ON a.id = r.affiliate_id
+                LEFT JOIN
+                    (SELECT affiliate_id, SUM(affiliate_commission_amount) AS available_balance
+                     FROM commissions
+                     WHERE status = 'approved' AND payment_id IS NULL
+                     GROUP BY affiliate_id) AS c ON c.affiliate_id = a.id
                 GROUP BY
                     a.id
                 ORDER BY

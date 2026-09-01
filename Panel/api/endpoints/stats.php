@@ -49,12 +49,33 @@ function getReferralStats(PDO $pdo, array $data): array {
             }
         }
 
+        // 3. کیف پول بازاریاب (موجودی قابل برداشت / در حال تسویه / پرداخت‌شده)
+        $stmt_wallet = $pdo->prepare("
+            SELECT
+                COALESCE(SUM(CASE WHEN status = 'approved' AND payment_id IS NULL THEN affiliate_commission_amount ELSE 0 END), 0) AS available_balance,
+                COALESCE(SUM(CASE WHEN status = 'approved' AND payment_id IS NOT NULL THEN affiliate_commission_amount ELSE 0 END), 0) AS in_settlement_amount,
+                COALESCE(SUM(CASE WHEN status = 'paid' THEN affiliate_commission_amount ELSE 0 END), 0) AS paid_total
+            FROM commissions
+            WHERE affiliate_id = ?
+        ");
+        $stmt_wallet->execute([$affiliate_id]);
+        $wallet = $stmt_wallet->fetch(PDO::FETCH_ASSOC);
+        $available_balance    = (float)($wallet['available_balance'] ?? 0);
+        $in_settlement_amount = (float)($wallet['in_settlement_amount'] ?? 0);
+        $paid_total           = (float)($wallet['paid_total'] ?? 0);
+
         return [
             'status' => 'success',
             'referral_count' => $referral_count,
             'commissions' => $formatted_commissions,
             'approved_commission_total' => round($approved_total, 2),
             'pending_commission_total' => round($pending_total, 2),
+            'wallet' => [
+                'available_balance'    => round($available_balance, 2),
+                'in_settlement_amount' => round($in_settlement_amount, 2),
+                'paid_total'           => round($paid_total, 2),
+                'min_payout_amount'    => (float)MNAFF_MIN_PAYOUT_AMOUNT,
+            ],
         ];
     } catch (PDOException $e) {
         return ['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()];

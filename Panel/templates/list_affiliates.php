@@ -26,6 +26,7 @@ require_once __DIR__ . '/layouts/header.php';
                             <th>نرخ کمیسیون بازاریاب</th>
                             <th>نرخ کمیسیون ارجاع</th>
                             <th>وضعیت</th>
+                            <th>موجودی قابل برداشت</th>
                             <th>درآمد کل</th>
                             <th>ارجاعات کل</th>
                             <th>لینک بازاریابی</th>
@@ -48,6 +49,7 @@ require_once __DIR__ . '/layouts/header.php';
                             <td><?php echo htmlspecialchars($affiliate['commission_rate']); ?>%</td>
                             <td><?php echo htmlspecialchars($affiliate['referred_user_commission_rate']); ?>%</td>
                             <td><span class="badge bg-success"><?php echo htmlspecialchars($affiliate['status']); ?></span></td>
+                            <td><strong><?php echo number_format((float)$affiliate['available_balance']); ?></strong> تومان</td>
                             <td><?php echo htmlspecialchars($affiliate['total_earnings']); ?></td>
                             <td><?php echo htmlspecialchars($affiliate['referral_count']); ?></td>
                              <td>https://www.puonak.com/?referral=<?php echo htmlspecialchars($affiliate['affiliate_code']); ?></td>

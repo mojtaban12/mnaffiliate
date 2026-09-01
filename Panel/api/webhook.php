@@ -64,6 +64,21 @@ switch ($action) {
         require_once __DIR__ . '/endpoints/approve_commission.php';
         $response = approveCommission($pdo, $_POST);
         break;
+
+    case 'get_wallet':
+        require_once __DIR__ . '/endpoints/wallet.php';
+        $response = getWallet($pdo, $_POST);
+        break;
+
+    case 'request_payout':
+        require_once __DIR__ . '/endpoints/wallet.php';
+        $response = requestPayout($pdo, $_POST);
+        break;
+
+    case 'get_payouts':
+        require_once __DIR__ . '/endpoints/wallet.php';
+        $response = getPayouts($pdo, $_POST);
+        break;
             
     default:
         http_response_code(400);

@@ -33,3 +33,9 @@ define('MNAFF_ADMIN_PASSWORD_HASH', '$2y$10$cqDjFrZIZMVkBe7HNkZod.NSZVh8CG9Rlone
 
 // ---------- مسیر پایه روتر پنل ----------
 define('MNAFF_BASE_PATH', 'mnaffiliate');
+
+// ---------- تسویه‌حساب ----------
+// حداقل مبلغ برداشت (تومان)
+define('MNAFF_MIN_PAYOUT_AMOUNT', 500000);
+// آدرس عمومی پنل (برای ساخت لینک رسیدهای پرداخت)
+define('MNAFF_PANEL_PUBLIC_URL', 'https://www.puonak.com/mnaffiliate');
