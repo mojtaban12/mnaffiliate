@@ -61,6 +61,44 @@ function mnaff_plugin_init() {
 }
 
 /**
+ * فعال‌سازی افزونه: ثبت اندپوینت + ساخت مجدد قوانین بازنویسی
+ */
+register_activation_hook(__FILE__, 'mnaff_plugin_activate');
+function mnaff_plugin_activate() {
+    add_rewrite_endpoint('mnaffiliate', EP_ROOT | EP_PAGES);
+    flush_rewrite_rules();
+    update_option('mnaffiliate_version', MNAFF_VERSION);
+}
+
+/**
+ * غیرفعال‌سازی: پاک‌سازی قوانین بازنویسی
+ */
+register_deactivation_hook(__FILE__, 'mnaff_plugin_deactivate');
+function mnaff_plugin_deactivate() {
+    flush_rewrite_rules();
+}
+
+/**
+ * اگر نسخه افزونه تغییر کرد، قوانین بازنویسی را بازسازی کن
+ * (تا آپدیت‌های بعدی هم اندپوینت خراب نشود)
+ */
+add_action('admin_init', function () {
+    if (get_option('mnaffiliate_version') !== MNAFF_VERSION) {
+        update_option('mnaffiliate_version', MNAFF_VERSION);
+        add_rewrite_endpoint('mnaffiliate', EP_ROOT | EP_PAGES);
+        flush_rewrite_rules();
+    }
+});
+
+/**
+ * ثبت اندپوینت «همکاری در فروش» در حساب کاربری ووکامرس
+ * (هر بار اجرا می‌شود تا قانون بازنویسی همیشه موجود باشد)
+ */
+add_action('init', function () {
+    add_rewrite_endpoint('mnaffiliate', EP_ROOT | EP_PAGES);
+});
+
+/**
  * لینک «افزونه‌ها» — نمایش تنظیمات (فعلاً لینک به تب پنل کاربری)
  */
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), function ($links) {

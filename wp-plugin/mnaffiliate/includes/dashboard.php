@@ -93,6 +93,12 @@ function mnaffiliate_content() {
     .mnaff-dash { font-family: Vazirmatn, Tahoma, sans-serif; display: flex; flex-direction: column; gap: 22px; direction: rtl; }
     .mnaff-card { background: #fff; padding: 22px; border-radius: 14px; box-shadow: 0 4px 18px rgba(15,23,42,.07); }
     .mnaff-card-title { font-size: 1.05rem; font-weight: 800; margin: 0 0 16px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
+    .mnaff-tabs { display: flex; flex-wrap: wrap; gap: 6px; background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 4px 18px rgba(15,23,42,.07); }
+    .mnaff-tab-btn { border: 0; background: transparent; padding: 10px 18px; border-radius: 9px; font-family: inherit; font-size: .88rem; font-weight: 700; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all .2s; }
+    .mnaff-tab-btn:hover { background: #eef2ff; color: #4f46e5; }
+    .mnaff-tab-btn.active { background: #4f46e5; color: #fff; box-shadow: 0 6px 16px rgba(79,70,229,.35); }
+    .mnaff-tab-panel { display: none; }
+    .mnaff-tab-panel.active { display: block; }
     .mnaff-wallet { background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; padding: 26px; border-radius: 16px; box-shadow: 0 10px 30px rgba(79,70,229,.35); }
     .mnaff-wallet-label { font-size: .85rem; opacity: .85; display: block; margin-bottom: 6px; }
     .mnaff-wallet-amount { font-size: 1.9rem; font-weight: 800; display: block; }
@@ -133,12 +139,22 @@ function mnaffiliate_content() {
         .mnaff-table thead { display: none; }
         .mnaff-table td { display: block; border: 0; padding: 4px 8px; }
         .mnaff-table tbody tr { display: block; border-bottom: 1px solid #e2e8f0; padding: 8px 0; }
+        .mnaff-tabs { overflow-x: auto; flex-wrap: nowrap; }
     }
     </style>
 
     <div class="mnaff-dash">
 
-        <!-- کیف پول -->
+        <!-- تب‌ها -->
+        <div class="mnaff-tabs">
+            <button type="button" class="mnaff-tab-btn active" data-tab="tab-wallet"><i class="bi bi-wallet2"></i> کیف پول</button>
+            <button type="button" class="mnaff-tab-btn" data-tab="tab-link"><i class="bi bi-link-45deg"></i> لینک بازاریابی</button>
+            <button type="button" class="mnaff-tab-btn" data-tab="tab-commissions"><i class="bi bi-cash-stack"></i> کمیسیون‌ها</button>
+            <button type="button" class="mnaff-tab-btn" data-tab="tab-payouts"><i class="bi bi-clock-history"></i> تاریخچه تسویه</button>
+        </div>
+
+        <!-- تب: کیف پول -->
+        <div id="tab-wallet" class="mnaff-tab-panel active">
         <div class="mnaff-wallet">
             <div class="mnaff-wallet-main">
                 <span class="mnaff-wallet-label">موجودی قابل برداشت شما</span>
@@ -165,8 +181,10 @@ function mnaffiliate_content() {
             </form>
             <div id="mnaff-payout-msg"></div>
         </div>
+        </div><!-- /tab-wallet -->
 
-        <!-- لینک بازاریابی -->
+        <!-- تب: لینک بازاریابی -->
+        <div id="tab-link" class="mnaff-tab-panel">
         <div class="mnaff-card">
             <h3 class="mnaff-card-title">لینک بازاریابی شما</h3>
             <div class="mnaff-code-row">
@@ -178,8 +196,10 @@ function mnaffiliate_content() {
             </div>
             <p style="color:#64748b;font-size:.78rem;margin:12px 0 0">این لینک را با دوستان خود به اشتراک بگذارید؛ با ثبت‌نام و خرید آن‌ها کمیسیون دریافت می‌کنید.</p>
         </div>
+        </div><!-- /tab-link -->
 
-        <!-- لیست کمیسیون‌ها -->
+        <!-- تب: کمیسیون‌ها -->
+        <div id="tab-commissions" class="mnaff-tab-panel">
         <div class="mnaff-card">
             <h3 class="mnaff-card-title">لیست کمیسیون‌ها</h3>
             <?php if (!empty($commission_list)): ?>
@@ -205,8 +225,10 @@ function mnaffiliate_content() {
                 <p class="mnaff-empty">در حال حاضر کمیسیونی برای نمایش وجود ندارد.</p>
             <?php endif; ?>
         </div>
+        </div><!-- /tab-commissions -->
 
-        <!-- تاریخچه تسویه‌ها -->
+        <!-- تب: تاریخچه تسویه -->
+        <div id="tab-payouts" class="mnaff-tab-panel">
         <div class="mnaff-card">
             <h3 class="mnaff-card-title">تاریخچه تسویه‌ها</h3>
             <?php if (!empty($payouts_list)): ?>
@@ -238,11 +260,20 @@ function mnaffiliate_content() {
                 <p class="mnaff-empty">هنوز درخواست تسویه‌ای ثبت نکرده‌اید.</p>
             <?php endif; ?>
         </div>
+        </div><!-- /tab-payouts -->
 
     </div>
 
     <script>
     jQuery(function ($) {
+        // سوئیچ تب‌ها
+        $(document).on('click', '.mnaff-tab-btn', function () {
+            $('.mnaff-tab-btn').removeClass('active');
+            $(this).addClass('active');
+            $('.mnaff-tab-panel').removeClass('active');
+            $('#' + $(this).data('tab')).addClass('active');
+        });
+        // کپی لینک بازاریابی
         $(document).on('click', '#mnaff-copy-link', function (e) {
             e.preventDefault();
             var link = document.getElementById('mnaff-ref-link').href;
@@ -251,9 +282,11 @@ function mnaffiliate_content() {
             if (navigator.clipboard) { navigator.clipboard.writeText(link).then(done); }
             else { var $t = $('<input>').val(link).appendTo('body'); $t.select(); document.execCommand('copy'); $t.remove(); done(); }
         });
+        // نمایش/مخفی کردن فرم تسویه
         $(document).on('click', '#mnaff-toggle-form', function () {
             $('#mnaff-payout-form').slideToggle();
         });
+        // ارسال درخواست تسویه
         $('#mnaff-payout-form').on('submit', function (e) {
             e.preventDefault();
             var $form = $(this);
