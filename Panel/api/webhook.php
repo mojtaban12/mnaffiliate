@@ -6,6 +6,8 @@ header('Content-Type: application/json');
 // Include the database connection file from the config folder
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/auto_migrate.php'; // ساخت خودکار اسکیما
+mnaff_auto_migrate($pdo);
 require_once __DIR__ . '/../functions.php'; // Includes the logRequest function
 
 // Get the action from the request early

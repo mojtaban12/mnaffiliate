@@ -17,6 +17,8 @@ define('MNAFF_PANEL', true); // برای مسدودسازی دسترسی مست�
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/middleware/auth.php'; // Includes and uses the middleware
 require_once __DIR__ . '/config/db_connect.php';
+require_once __DIR__ . '/config/auto_migrate.php'; // ساخت خودکار اسکیما
+mnaff_auto_migrate($pdo);
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/api/endpoints/affiliates.php';
 require_once __DIR__ . '/api/endpoints/users_proxy.php';
@@ -129,25 +131,35 @@ switch ($request_uri) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
+            $ip = mnaff_get_client_ip();
 
-            // بررسی نام کاربری و پسورد (هش‌شده یا متن ساده fallback)
-            $is_valid_user = hash_equals(MNAFF_ADMIN_USERNAME, $username);
-            if (!empty(MNAFF_ADMIN_PASSWORD_HASH)) {
-                $is_valid_pass = password_verify($password, MNAFF_ADMIN_PASSWORD_HASH);
-            } elseif (defined('MNAFF_ADMIN_PASSWORD')) {
-                $is_valid_pass = hash_equals(MNAFF_ADMIN_PASSWORD, $password);
+            // بررسی قفل Brute-force (بر اساس IP)
+            $remaining = 0;
+            if (mnaff_login_is_locked($pdo, $ip, $remaining)) {
+                $mins = max(1, (int)ceil($remaining / 60));
+                $message = 'به دلیل تلاش‌های ناموفق زیاد، ورود موقتاً مسدود است. حدود ' . $mins . ' دقیقه بعد دوباره تلاش کنید.';
             } else {
-                $is_valid_pass = false;
-            }
+                // بررسی نام کاربری و پسورد (هش‌شده یا متن ساده fallback)
+                $is_valid_user = hash_equals(MNAFF_ADMIN_USERNAME, $username);
+                if (!empty(MNAFF_ADMIN_PASSWORD_HASH)) {
+                    $is_valid_pass = password_verify($password, MNAFF_ADMIN_PASSWORD_HASH);
+                } elseif (defined('MNAFF_ADMIN_PASSWORD')) {
+                    $is_valid_pass = hash_equals(MNAFF_ADMIN_PASSWORD, $password);
+                } else {
+                    $is_valid_pass = false;
+                }
 
-            if ($is_valid_user && $is_valid_pass) {
-                session_regenerate_id(true); // جلوگیری از Session Fixation
-                $_SESSION['loggedin'] = true;
-                $_SESSION['username'] = $username;
-                header('Location: /' . $base_path . '/dashboard');
-                exit;
-            } else {
-                $message = 'نام کاربری یا رمز عبور اشتباه است.';
+                if ($is_valid_user && $is_valid_pass) {
+                    mnaff_login_clear($pdo, $ip, $username);
+                    session_regenerate_id(true); // جلوگیری از Session Fixation
+                    $_SESSION['loggedin'] = true;
+                    $_SESSION['username'] = $username;
+                    header('Location: /' . $base_path . '/dashboard');
+                    exit;
+                } else {
+                    mnaff_login_record_failure($pdo, $ip, $username);
+                    $message = 'نام کاربری یا رمز عبور اشتباه است.';
+                }
             }
         }
         require_once __DIR__ . '/templates/login.php';

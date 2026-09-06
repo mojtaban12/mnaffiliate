@@ -3,7 +3,7 @@
  * Plugin Name:       MN Affiliate — سیستم بازاریابی یک‌سطحی
  * Plugin URI:        https://puonak.com
  * Description:       سیستم بازاریابی یک‌سطحی متصل به میکروسرویس mnaffiliates؛ شامل لینک ارجاع، تخفیف خودکار خریدار، کمیسیون، کیف پول و درخواست تسویه دستی.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Author:            MN Affiliate
  * Text Domain:       mnaffiliate
  * Requires at least: 5.8
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit; // دسترسی مستقیم ممنوع
 }
 
-define('MNAFF_VERSION', '2.0.0');
+define('MNAFF_VERSION', '2.1.0');
 define('MNAFF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('MNAFF_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -58,6 +58,7 @@ function mnaff_plugin_init() {
     require_once MNAFF_PLUGIN_DIR . 'includes/commissions.php';   // تخفیف + ثبت/تأیید کمیسیون
     require_once MNAFF_PLUGIN_DIR . 'includes/wallet-ajax.php';   // AJAX درخواست تسویه
     require_once MNAFF_PLUGIN_DIR . 'includes/dashboard.php';     // تب «همکاری در فروش»
+    require_once MNAFF_PLUGIN_DIR . 'includes/links.php';         // لینک‌های فروش
 }
 
 /**
@@ -66,6 +67,10 @@ function mnaff_plugin_init() {
 register_activation_hook(__FILE__, 'mnaff_plugin_activate');
 function mnaff_plugin_activate() {
     add_rewrite_endpoint('mnaffiliate', EP_ROOT | EP_PAGES);
+    if (!function_exists('mnaff_install_link_tables')) {
+        require_once MNAFF_PLUGIN_DIR . 'includes/links.php';
+    }
+    mnaff_install_link_tables(); // ساخت جدول‌های لینک‌های فروش
     flush_rewrite_rules();
     update_option('mnaffiliate_version', MNAFF_VERSION);
 }
@@ -86,6 +91,9 @@ add_action('admin_init', function () {
     if (get_option('mnaffiliate_version') !== MNAFF_VERSION) {
         update_option('mnaffiliate_version', MNAFF_VERSION);
         add_rewrite_endpoint('mnaffiliate', EP_ROOT | EP_PAGES);
+        if (function_exists('mnaff_install_link_tables')) {
+            mnaff_install_link_tables(); // ساخت مکرر امن جدول‌های لینک‌ها
+        }
         flush_rewrite_rules();
     }
 });

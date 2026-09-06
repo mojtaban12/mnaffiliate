@@ -134,6 +134,21 @@ function mnaffiliate_content() {
     .mnaff-badge.info { background: #e0f2fe; color: #0369a1; }
     .mnaff-empty { color: #64748b; font-size: .87rem; background: #f8fafc; border-radius: 10px; padding: 18px; text-align: center; }
     .mnaff-receipt-link { font-size: .78rem; color: #0284c7; }
+    .mnaff-search-input { width: 100%; max-width: 460px; border: 1px solid #e2e8f0; border-radius: 9px; padding: 10px 14px; font-family: inherit; font-size: .88rem; }
+    .mnaff-search-results { list-style: none; margin: 6px 0 0; padding: 0; border: 1px solid #e2e8f0; border-radius: 10px; max-width: 460px; max-height: 240px; overflow-y: auto; background: #fff; display: none; }
+    .mnaff-search-results li { cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .mnaff-search-results li:last-child { border-bottom: 0; }
+    .mnaff-search-results li:hover { background: #eef2ff; }
+    .mnaff-search-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .mnaff-search-item img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+    .mnaff-search-info { display: flex; flex-direction: column; gap: 2px; }
+    .mnaff-search-name { font-size: .85rem; font-weight: 700; color: #1e293b; }
+    .mnaff-search-price { font-size: .76rem; color: #64748b; }
+    .mnaff-search-none { padding: 10px 14px; color: #64748b; font-size: .82rem; text-align: center; }
+    .mnaff-selected { margin-top: 10px; font-size: .85rem; color: #1e293b; }
+    .mnaff-link-actions { margin-top: 12px; }
+    .mnaff-links-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; vertical-align: middle; margin-inline-end: 8px; }
+    .mnaff-links-copy { color: #0284c7; font-size: .8rem; word-break: break-all; direction: ltr; unicode-bidi: embed; }
     @media (max-width: 768px) {
         .mnaff-wallet-sub { flex-direction: column; }
         .mnaff-table thead { display: none; }
@@ -151,6 +166,7 @@ function mnaffiliate_content() {
             <button type="button" class="mnaff-tab-btn" data-tab="tab-link"><i class="bi bi-link-45deg"></i> لینک بازاریابی</button>
             <button type="button" class="mnaff-tab-btn" data-tab="tab-commissions"><i class="bi bi-cash-stack"></i> کمیسیون‌ها</button>
             <button type="button" class="mnaff-tab-btn" data-tab="tab-payouts"><i class="bi bi-clock-history"></i> تاریخچه تسویه</button>
+            <button type="button" class="mnaff-tab-btn" data-tab="tab-links"><i class="bi bi-link-45deg"></i> لینک‌های فروش</button>
         </div>
 
         <!-- تب: کیف پول -->
@@ -262,6 +278,36 @@ function mnaffiliate_content() {
         </div>
         </div><!-- /tab-payouts -->
 
+        <!-- تب: لینک‌های فروش -->
+        <div id="tab-links" class="mnaff-tab-panel">
+        <div class="mnaff-card">
+            <h3 class="mnaff-card-title">ساخت لینک فروش</h3>
+            <p class="mnaff-hint">محصول را جستجو کنید، یک لینک یکتا بسازید و آن را در تلگرام / شبکه‌های اجتماعی به اشتراک بگذارید.</p>
+            <div class="mnaff-field">
+                <label for="mnaff-link-search">جستجوی محصول:</label>
+                <input type="text" id="mnaff-link-search" class="mnaff-search-input" autocomplete="off" placeholder="نام محصول را بنویسید...">
+                <ul id="mnaff-link-results" class="mnaff-search-results"></ul>
+            </div>
+            <div id="mnaff-selected-product" class="mnaff-selected"></div>
+            <div class="mnaff-link-actions">
+                <button type="button" class="mnaff-btn-payout" id="mnaff-create-link" disabled><i class="bi bi-link-45deg"></i> ساخت لینک</button>
+            </div>
+            <div id="mnaff-links-msg"></div>
+        </div>
+        <div class="mnaff-card">
+            <h3 class="mnaff-card-title">لینک‌های شما <span id="mnaff-links-count"></span></h3>
+            <div style="overflow-x:auto">
+                <table class="mnaff-table">
+                    <thead>
+                        <tr><th>محصول</th><th>لینک</th><th>بازدید</th><th>بازدید یکتا</th><th>خرید</th><th>مبلغ فروش</th><th>نرخ تبدیل</th><th>تاریخ</th></tr>
+                    </thead>
+                    <tbody id="mnaff-links-body"></tbody>
+                </table>
+            </div>
+            <p class="mnaff-empty" id="mnaff-links-empty">در حال بارگذاری...</p>
+        </div>
+        </div><!-- /tab-links -->
+
     </div>
 
     <script>
@@ -303,6 +349,119 @@ function mnaffiliate_content() {
                 $msg.html('<div class="mnaff-msg err">خطا در ارتباط با سرور.</div>');
             });
         });
+    });
+
+    // --- لینک‌های فروش ---
+    jQuery(function ($) {
+        var mnaffLinks = {
+            ajax: '<?php echo esc_url(admin_url('admin-ajax.php')); ?>',
+            nonce: '<?php echo esc_attr(wp_create_nonce('mnaff_links_nonce')); ?>'
+        };
+        var linkSelected = null, linkSearchTimer = null;
+
+        // جستجوی زنده با debounce
+        $('#mnaff-link-search').on('keyup', function () {
+            var q = $(this).val().trim();
+            clearTimeout(linkSearchTimer);
+            if (q.length < 2) { $('#mnaff-link-results').empty().hide(); return; }
+            linkSearchTimer = setTimeout(function () { mnaffSearchProducts(q); }, 400);
+        });
+
+        function mnaffSearchProducts(q) {
+            $.post(mnaffLinks.ajax, { action: 'mnaff_search_products', nonce: mnaffLinks.nonce, term: q }, function (res) {
+                var $r = $('#mnaff-link-results').empty().hide();
+                if (!res || !res.success) return;
+                var prods = res.data.products || [];
+                if (!prods.length) {
+                    $r.append('<li class="mnaff-search-none">محصولی یافت نشد.</li>').show();
+                    return;
+                }
+                prods.forEach(function (p) {
+                    var $li = $('<li>').data('product', p);
+                    var inner = $('<div class="mnaff-search-item">');
+                    if (p.image) inner.append('<img src="' + p.image + '" alt="">');
+                    var info = $('<div class="mnaff-search-info">');
+                    info.append('<span class="mnaff-search-name">' + p.name + '</span>');
+                    if (p.price) info.append('<span class="mnaff-search-price">' + p.price + '</span>');
+                    inner.append(info);
+                    $li.append(inner);
+                    $r.append($li);
+                });
+                $r.show();
+            });
+        }
+
+        // انتخاب محصول
+        $(document).on('click', '#mnaff-link-results li', function () {
+            var p = $(this).data('product');
+            linkSelected = p;
+            $('#mnaff-link-results').empty().hide();
+        $('#mnaff-selected-product').html('<span>محصول انتخاب‌شده: <strong>' + p.name + '</strong></span>');
+        $('#mnaff-create-link').prop('disabled', false);
+    });
+
+    // ساخت لینک
+    $('#mnaff-create-link').on('click', function () {
+        if (!linkSelected) return;
+        var $b = $(this), $msg = $('#mnaff-links-msg');
+        $b.prop('disabled', true);
+        $.post(mnaffLinks.ajax, { action: 'mnaff_create_link', nonce: mnaffLinks.nonce, product_id: linkSelected.id }, function (res) {
+            $b.prop('disabled', false);
+            if (res && res.success) {
+                $msg.attr('class', 'mnaff-msg ok').text('لینک ساخته شد ✓');
+                linkSelected = null;
+                $('#mnaff-selected-product').empty();
+                $('#mnaff-link-search').val('');
+                mnaffLoadLinks();
+            } else {
+                $msg.attr('class', 'mnaff-msg err').text((res && res.data && res.data.message) || 'خطا در ساخت لینک.');
+            }
+        }).fail(function () {
+            $b.prop('disabled', false);
+            $msg.attr('class', 'mnaff-msg err').text('خطا در ارتباط با سرور.');
+        });
+    });
+
+    // بارگذاری لیست لینک‌ها
+    function mnaffLoadLinks() {
+        $.post(mnaffLinks.ajax, { action: 'mnaff_get_links', nonce: mnaffLinks.nonce }, function (res) {
+            var $tb = $('#mnaff-links-body').empty();
+            var $empty = $('#mnaff-links-empty');
+            if (!res || !res.success) { $empty.show().text('خطا در دریافت لینک‌ها.'); return; }
+            var links = res.data.links || [];
+            if (!links.length) { $empty.show().text('هنوز لینکی نساخته‌اید.'); return; }
+            $empty.hide();
+            $('#mnaff-links-count').text('(' + links.length + ')');
+            links.forEach(function (l) {
+                var img = l.product_image ? '<img class="mnaff-links-thumb" src="' + l.product_image + '" alt="">' : '';
+                var row = '<tr>' +
+                    '<td>' + img + l.product_name + '</td>' +
+                    '<td class="num"><a class="mnaff-links-copy" href="' + l.url + '" target="_blank" rel="noopener">' + l.url.replace(/^https?:\/\//, '') + '</a></td>' +
+                    '<td class="num">' + l.clicks + '</td>' +
+                    '<td class="num">' + l.unique_visitors + '</td>' +
+                    '<td class="num">' + l.purchases + '</td>' +
+                    '<td class="num">' + l.sales + '</td>' +
+                    '<td class="num">' + l.conversion_rate + '%</td>' +
+                    '<td class="num">' + l.created_at + '</td>' +
+                    '</tr>';
+                $tb.append(row);
+            });
+        });
+    }
+
+    // بارگذاری هنگام باز شدن تب
+    $(document).on('click', '.mnaff-tab-btn[data-tab="tab-links"]', function () {
+        mnaffLoadLinks();
+    });
+
+    // کپی لینک
+    $(document).on('click', '.mnaff-links-copy', function (e) {
+        e.preventDefault();
+        var $a = $(this), $t = $('<input>').val(this.href).appendTo('body');
+        $t.select();
+        $t.remove();
+        if (navigator.clipboard) { navigator.clipboard.writeText(this.href); }
+    });
     });
     </script>
     <?php

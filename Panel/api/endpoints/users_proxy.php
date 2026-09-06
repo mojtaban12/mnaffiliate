@@ -16,22 +16,34 @@ function proxyUserSearch(string $phone): array {
         return ['status' => 'error', 'message' => 'حداقل ۳ کاراکتر وارد کنید.'];
     }
 
-    $url = MNAFF_WP_USER_SEARCH_URL;
-    $data = [
-        'api_key' => MNAFF_WP_REST_API_KEY,
-        'phone'   => $phone,
-    ];
+    // اندپوینت وردپرس /users/search با GET کار می‌کند (نه POST)
+    $url = MNAFF_WP_USER_SEARCH_URL
+         . '?api_key=' . urlencode(MNAFF_WP_REST_API_KEY)
+         . '&phone=' . urlencode($phone);
 
-    try {
-        $response = sendPostRequest($url, $data);
-        $users = json_decode($response, true);
+    $context = stream_context_create(['http' => ['timeout' => 30, 'ignore_errors' => true]]);
+    $body = @file_get_contents($url, false, $context);
 
-        if (!is_array($users)) {
-            return ['status' => 'error', 'message' => 'پاسخ نامعتبر از وردپرس.'];
-        }
-
-        return ['status' => 'success', 'users' => $users];
-    } catch (Exception $e) {
-        return ['status' => 'error', 'message' => 'خطا در اتصال به وردپرس: ' . $e->getMessage()];
+    $http_code = 0;
+    if (isset($http_response_header[0]) && preg_match('#HTTP/\S+\s+(\d+)#', $http_response_header[0], $m)) {
+        $http_code = (int)$m[1];
     }
+
+    if ($body === false) {
+        return ['status' => 'error', 'message' => 'خطا در اتصال به وردپرس.'];
+    }
+
+    // در صورت خطای وردپرس، پیامِ خودِ آن را برمی‌گردانیم
+    if ($http_code >= 400) {
+        $err = json_decode($body, true);
+        $msg = $err['message'] ?? ('HTTP Error: ' . $http_code);
+        return ['status' => 'error', 'message' => 'خطا در وردپرس: ' . $msg];
+    }
+
+    $users = json_decode($body, true);
+    if (!is_array($users)) {
+        return ['status' => 'error', 'message' => 'پاسخ نامعتبر از وردپرس.'];
+    }
+
+    return ['status' => 'success', 'users' => $users];
 }

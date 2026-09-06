@@ -34,6 +34,12 @@ define('MNAFF_ADMIN_PASSWORD_HASH', '$2y$10$cqDjFrZIZMVkBe7HNkZod.NSZVh8CG9Rlone
 // ---------- مسیر پایه روتر پنل ----------
 define('MNAFF_BASE_PATH', 'mnaffiliate');
 
+// ---------- محافظت لاگین (Brute-force lockout) ----------
+// حداکثر تلاش ناموفق مجاز قبل از قفل (بر اساس IP)
+define('MNAFF_LOGIN_MAX_ATTEMPTS', 5);
+// بازه زمانی شمارش تلاش‌های ناموفق و طول مدت قفل (دقیقه)
+define('MNAFF_LOGIN_WINDOW_MINUTES', 15);
+
 // ---------- تسویه‌حساب ----------
 // حداقل مبلغ برداشت (تومان)
 define('MNAFF_MIN_PAYOUT_AMOUNT', 500000);
