@@ -56,6 +56,11 @@ switch ($action) {
         require_once __DIR__ . '/endpoints/referral_info.php';
         $response = getReferralInfo($pdo, $_POST);
         break;
+
+    case 'get_affiliate_info':
+        require_once __DIR__ . '/endpoints/affiliate_info.php';
+        $response = getAffiliateInfo($pdo, $_POST);
+        break;
         
     case 'record_commission':
         require_once __DIR__ . '/endpoints/record_commission.php';

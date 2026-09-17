@@ -64,6 +64,11 @@ function mnaff_apply_referral_discount() {
         return;
     }
 
+    // اگر کوپن بازاریابی اعمال شده، تخفیف را همان کوپن می‌دهد → از تخفیف دوبل جلوگیری کن
+    if (function_exists('mnaff_cart_has_affiliate_coupon') && mnaff_cart_has_affiliate_coupon()) {
+        return;
+    }
+
     $referral_data = WC()->session->get('mnaff_referral_data');
 
     if ($referral_data && isset($referral_data['referred_user_commission_rate']) && $referral_data['referred_user_commission_rate'] > 0) {

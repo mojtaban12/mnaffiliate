@@ -59,6 +59,7 @@ function mnaff_plugin_init() {
     require_once MNAFF_PLUGIN_DIR . 'includes/wallet-ajax.php';   // AJAX درخواست تسویه
     require_once MNAFF_PLUGIN_DIR . 'includes/dashboard.php';     // تب «همکاری در فروش»
     require_once MNAFF_PLUGIN_DIR . 'includes/links.php';         // لینک‌های فروش
+    require_once MNAFF_PLUGIN_DIR . 'includes/coupon.php';        // کد بازاریاب به‌عنوان کد تخفیف
 }
 
 /**
